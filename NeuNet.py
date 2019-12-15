@@ -11,7 +11,7 @@ class NeuralNet(nn.Module):
         """
         initialization function
         :param input_size: input data dimension
-        :param hidden_size: list of hidden layer sizes
+        :param hidden_size: list of hidden layer sizes, arbitrary length
         :param output_size: output data dimension
         """
         super().__init__()
