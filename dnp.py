@@ -81,7 +81,7 @@ class DeepNet:
         self.selected = None
         """model"""
         self.nnmodel = None
-        self.last_weight = None  # weight of existing features
+        self.last_model = None  # last model
         """optimization parameter"""
         self.criterion = None
         self.learning_rate = None
@@ -104,9 +104,9 @@ class DeepNet:
         """
         initialize parameters
         """
-        self.S = {0}
-        self.selected = {}
-        self.C = set(range(1, self.p))
+        self.S = [0]
+        self.selected = []
+        self.C = list(range(1, self.p))
 
     def set_parameters(self, x: torch.Tensor, batch_size: int, learning_rate: float, epochs: int,
                        dropout_prop: list = None):
@@ -139,7 +139,7 @@ class DeepNet:
         output_size = self.num_classes
         self.nnmodel = NeuralNet(input_size, hidden_size, output_size)
         self.xavier_initialization()
-        x = x[:, list(self.S)]
+        x = x[:, self.S]
         optimizer = torch.optim.Adam(self.nnmodel.parameters(), lr=self.learning_rate)
         trainset = []
         for i in range(x.shape[0]):
@@ -157,7 +157,7 @@ class DeepNet:
                 running_loss += loss.item()
             else:
                 print(f"Epoch: {e + 1}\nTraining loss: {running_loss/len(trainloader)}")
-        self.last_weight = self.nnmodel.input.weight
+        self.last_model = copy.deepcopy(self.nnmodel)
 
     def dropout(self) -> nn.Module:
         """
@@ -194,7 +194,7 @@ class DeepNet:
         """
         model_gr = NeuralNet(self.p, self.hidden_size, self.num_classes)
         temp = torch.zeros(model_gr.input.weight.shape)
-        temp[:, list(self.S)] = model.input.weight
+        temp[:, self.S] = model.input.weight
         model_gr.input.weight.data = temp
         for h in range(len(self.hidden_size) - 1):
             model_gr.hiddens[h].weight.data = model.hiddens[h].weight
@@ -230,7 +230,7 @@ class DeepNet:
         @return: the index of input feature to be included in the model next
         """
         gradient_norm = input_gradient.norm(p=self.q, dim=0)
-        gradient_norm[list(self.S)] = 0
+        gradient_norm[self.S] = 0
         max_index = torch.argmax(gradient_norm)
         return max_index.item()
 
@@ -239,7 +239,7 @@ class DeepNet:
         updates the selected set and candidate set
         @param max_index: the index of input feature to be included in the model next
         """
-        self.S.add(max_index)
+        self.S.append(max_index)
         self.C.remove(max_index)
         self.selected = self.S.copy()
         self.selected.remove(0)
@@ -260,13 +260,18 @@ class DeepNet:
         use Xavier initialization to initialize the newly added feature weight
         @return: None
         """
-        if self.last_weight is not None:
+        if self.last_model is not None:
             weight = torch.zeros(self.hidden_size[0], len(self.S))
             nn.init.xavier_normal_(weight, gain=nn.init.calculate_gain('relu'))
-            old_S = self.S.copy()
-            old_S.remove(self.new)
-            weight[:, list(old_S)] = self.last_weight
+            old_s = self.S.copy()
+            old_s.remove(self.new)
+            for i in self.S:
+                if i != self.new:
+                    weight[:, i] = self.last_model.input.weight.data[:, old_s.index(i)]
             self.nnmodel.input.weight.data = weight
+            for h in range(len(self.hidden_size) - 1):
+                self.nnmodel.hiddens[h].weight.data = self.last_model.hiddens[h].weight.data
+            self.nnmodel.output.weight.data = self.last_model.output.weight.data
         else:
             print(f"First iter, no Xavier initialization needed.")
 
