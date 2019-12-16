@@ -267,7 +267,7 @@ class DeepNet:
             old_s.remove(self.new)
             for i in self.S:
                 if i != self.new:
-                    weight[:, i] = self.last_model.input.weight.data[:, old_s.index(i)]
+                    weight[:, self.S.index(i)] = self.last_model.input.weight.data[:, old_s.index(i)]
             self.nnmodel.input.weight.data = weight
             for h in range(len(self.hidden_size) - 1):
                 self.nnmodel.hiddens[h].weight.data = self.last_model.hiddens[h].weight.data
