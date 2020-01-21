@@ -9,23 +9,26 @@ def sigmoid(x):
 	return np.exp(x) / (1 + np.exp(x))
 
 
-def generate_data(seed: int, m: int) -> (np.array, np.array, np.array, np.array):
+def generate_data(seed: int, m: int, n: int = 8500, train_size: int = 1000, flip: float = 0.05, sig: float = 0.5) \
+		-> (np.array, np.array, np.array, np.array):
 	"""
 	generate random simulation data according to the set up in "https://www.ijcai.org/proceedings/2017/0318.pdf"
+	@param train_size: training sample size
+	@param n: total sample size
 	@param m: nonzero input
 	@param seed: seed
+	@param flip: proportion of labels to be flipped
+	@param sig: the variance of nonzero weights
 	@return: x_train, x_test, y_train, y_test
 	"""
 	"""parameters"""
 	np.random.seed(seed)
 	p = 10000
-	n = 8500
-	train_size = 1000
 	h1 = 50
 	h2 = 30
 	h3 = 15
 	h4 = 10
-	sig = np.sqrt(0.5)
+	sig = np.sqrt(sig)
 	"""generate x"""
 	x = np.random.rand(n*p).reshape(n, p) * 2 - 1
 	"""neural network forward"""
@@ -45,8 +48,8 @@ def generate_data(seed: int, m: int) -> (np.array, np.array, np.array, np.array)
 	prob = sigmoid(np.matmul(a4, w5))
 	"""generate y"""
 	y = np.where(prob > 0.5, 1, 0)
-	"""flip 5% labels"""
-	flip = np.random.choice(range(n), size=int(n*0.05))
+	"""flip labels"""
+	flip = np.random.choice(range(n), size=int(n*flip))
 	y[flip, :] = 1 - y[flip, :]
 	print(f"y has mean {y.mean()}")
 	return x[:train_size, :], x[train_size:, :], y[:train_size], y[train_size:]

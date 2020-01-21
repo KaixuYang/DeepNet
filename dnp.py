@@ -155,7 +155,7 @@ class DeepNet:
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item()
-            else:
+            if e % 10 == 9:
                 print(f"Epoch: {e + 1}\nTraining loss: {running_loss/len(trainloader)}")
         self.last_model = copy.deepcopy(self.nnmodel)
 
@@ -276,7 +276,7 @@ class DeepNet:
             print(f"First iter, no Xavier initialization needed.")
 
     def train(self, x: torch.Tensor, y: torch.Tensor, batch_size: int = 100, learning_rate: float = 0.005,
-              epochs: int = 20, dropout_prop: list = None):
+              epochs: int = 20, dropout_prop: list = None, val: list = None):
         """
         train the deep neural network on x and y
         @param x: the training data
@@ -285,6 +285,7 @@ class DeepNet:
         @param learning_rate: learning rate
         @param epochs: number of epochs
         @param dropout_prop: a list of proportions of dropout in each hidden layer
+        @param val: a list of x_val and y_val
         """
         x = self.numpy_to_torch(x)
         y = self.numpy_to_torch(y)
@@ -300,6 +301,9 @@ class DeepNet:
             self.new = self.find_next_input(input_gradient)
             self.update_sets(self.new)
             print(f"Number of features selected is {len(self.S) - 1}.")
+            if val is not None:
+                pred = self.predict(val[0])
+                print(f"Validation accuracy is {np.mean(abs(pred.squeeze() - val[1].squeeze()))}")
         self.update_nn_weight(x, y)
         print(f"Feature selection completed, selected features are {self.selected}")
 
