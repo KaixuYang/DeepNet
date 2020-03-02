@@ -30,7 +30,7 @@ def generate_data(
 	h2 = 30
 	h3 = 15
 	h4 = 10
-	sig1 = np.sqrt(0.5)
+	sig1 = np.sqrt(1)
 	sig = np.sqrt(sig)
 	"""generate x"""
 	x = np.random.rand(n*p).reshape(n, p) * 2 - 1
